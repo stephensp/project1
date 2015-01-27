@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-c 
 LDFLAGS=
-SOURCES=main.c client.c
+SOURCES=*.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=3700client
 
