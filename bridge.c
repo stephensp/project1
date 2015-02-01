@@ -11,7 +11,7 @@
 int bridgeInit(bridge *b) {
 	// First let's set up the socket
 	struct sockaddr_un soc;
-	int sockfd, length, status;
+	int sockfd, length, status, i;
 
 	sockfd = socket(AF_UNIX, SOCK_SEQPACKET, 0);
 	if(sockfd == -1) {
@@ -20,11 +20,15 @@ int bridgeInit(bridge *b) {
 	}
 
 	soc.sun_family = AF_UNIX;
-	strcpy(soc.sun_path, b->lan);
-	printf("soc.sun_path: %s\n", soc.sun_path);
-//	strcpy(soc.sun_path, "\0#portiah#25991#1");
-//	length = (int)(sizeof(soc.sun_family) + strlen(soc.sun_path) + 1);
 
+	length = 1 + strlen(&(b->lan[1]));
+	memcpy(soc.sun_path, b->lan, length);
+	printf("soc.sun_path: %s\n", soc.sun_path);
+
+//	for(i = 0; i < length; i++) {
+//		printf("%d ", soc.sun_path[i]);
+//	}
+//	printf("\n");
 	status = connect(sockfd, (struct sockaddr *) &soc, sizeof(soc));
 	if(status == -1) {
 		printf("Error: failed to connect to server\n");

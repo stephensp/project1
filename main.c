@@ -23,15 +23,16 @@ int main(int argc, char *argv[]) {
 
 	// Set some variables
 	b->id = atoi(argv[1]);
-	
+	sscanf(argv[1], "%x", &(b->id));	
 	// Let's make this run with just 1 LAN for now
 	b->lan = (char*)malloc(sizeof(argv[2])+2);
 
 
-	strcpy(b->lan, "\\0");	
-	strcpy(&(b->lan[2]), argv[2]);	
+	b->lan[0] = '\0';
+	strcpy(&(b->lan[1]), argv[2]);	
+//	strcpy(b->lan, argv[2]);	
 
-	printf("Bridge %d starting up\n", b->id);
+	printf("Bridge %08x starting up\n", b->id);
 	printf("Lan name %s \n", b->lan);
 
 	if(bridgeInit(b) == -1) {
