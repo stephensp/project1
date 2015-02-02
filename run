@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-use lib '/home/amislove/perl5/lib/perl5';
 use strict;
 use warnings;
 use threads;
@@ -100,6 +99,7 @@ foreach my $bridge (@{ $conf->{"bridges"} }) {
 		if (! exists $revids{$lan}) {
 			my $server = IO::Socket::UNIX->new(
 				Type => SOCK_SEQPACKET,
+#				Type => SOCK_STREAM,
 				Local => get_path($lan),
 				Listen => SOMAXCONN,
 			);
@@ -110,7 +110,7 @@ foreach my $bridge (@{ $conf->{"bridges"} }) {
 
 			$lans{$server->fileno} = ();
 			$revids{$lan} = $server;
-			mylog("Driver", "Created LAN $lan");
+			mylog("Driver", "Created LAN $lan at file no " . $server->fileno);
 		}
 	}
 }
@@ -137,15 +137,21 @@ sub get_random_lan {
 	return $lans[rand(@lans)]
 }
 
+my $i = 0;
 while (1) {
+	$i++;
 	my $nextevent = get_next_event();
 	my $sleep = $nextevent->{"time"} - (time - $start);
-#  mylog("Driver", "Sleeping for up to $sleep");
+#	mylog("Driver", "Sleeping for up to $sleep");
 
 	my @ready = $sel->can_read($sleep);
 
+	mylog("Driver", "Pass $i");
 	foreach my $fh (@ready) {
+		mylog("Driver", "Ready: " . get_id(\$fh));
+		mylog("Driver", "File no: " . $fh->fileno);
 		if (exists $lans{$fh->fileno}) {
+			mylog("Driver", "Calling accept() on " . get_id(\$fh));
 			my $sock = $fh->accept();
 			$sock->autoflush(1); 
 
@@ -160,16 +166,17 @@ while (1) {
 				mylog(get_id(\$fh), "LAN Disconnected");
 			}
 		} elsif (exists $bridges{$fh->fileno}) {
+			mylog("Driver", "Calling recv() on " . get_id(\$fh));
 			my $msg = "";
 			$fh->recv($msg, 1500);
 			if ($msg) {
-#        mylog(get_id(\$fh), "Read $msg");
+#				mylog(get_id(\$fh), "Read $msg");
 				recv_message($bridges{$fh->fileno}, $msg, get_id(\$fh));
 				broadcast($bridges{$fh->fileno}->fileno, $msg, $fh->fileno);
-#        foreach my $sock (keys %{ $lans{$bridges{$fh->fileno}->fileno}}) {
-#          my $handle = get_handle($sock);
-#          $$handle->send($msg);
-#        }
+#				foreach my $sock (keys %{ $lans{$bridges{$fh->fileno}->fileno}}) {
+#					my $handle = get_handle($sock);
+#					$$handle->send($msg);
+#				}
 			} else {
 				remove_handle(\$fh);
 				delete $lans{$bridges{$fh->fileno}->fileno}{$fh->fileno};
@@ -207,7 +214,7 @@ while (1) {
 sub broadcast {
 	my ($lan, $msg, $from) = @_;
 
-#  mylog("Driver", "Broadcasting '$msg' to $lan");
+	mylog("Driver", "Broadcasting '$msg' to $lan");
 
 	foreach my $sock (keys %{ $lans{$lan}}) {
 		my $handle = get_handle($sock);
@@ -243,6 +250,7 @@ sub add_handle {
 	$handles{$$obj->fileno} = $obj;
 	$ids{$$obj->fileno} = $name;
 	$sel->add($$obj);
+	mylog("Driver", "Adding: " . $$obj->fileno . " = $name");
 }
 
 sub get_id {
@@ -374,6 +382,7 @@ sub add_host {
 
 	chomp($host);
 	mylog("Driver", "Starting host $host on " . $ids{$lan->fileno});
+	mylog("Driver", "\t(File no " . $lan->fileno . ")");
 	$hosts{$host} = $lan;
 }
 
