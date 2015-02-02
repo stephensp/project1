@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bridge.h"
+#include "strhelper.h"
 
 int main(int argc, char *argv[]) {
 
@@ -25,15 +26,13 @@ int main(int argc, char *argv[]) {
 	b->id = atoi(argv[1]);
 	sscanf(argv[1], "%x", &(b->id));	
 	// Let's make this run with just 1 LAN for now
-	b->lan = (char*)malloc(sizeof(argv[2])+2);
+	b->lan = create_lan_name(argv[2]);
+//	b->lan = (char*)malloc(sizeof(argv[2])+2);
 
 
-	b->lan[0] = '\0';
-	strcpy(&(b->lan[1]), argv[2]);	
-//	strcpy(b->lan, argv[2]);	
 
-	printf("Bridge %08x starting up\n", b->id);
-	printf("Lan name %s \n", b->lan);
+	printf("Bridge %04x starting up\n", b->id);
+	printf("Lan name 0%s \n", b->lan + 1);
 
 	if(bridgeInit(b) == -1) {
 		printf("Error: Init failure\n");
@@ -45,6 +44,10 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Clean up
+	if (bridge_close(b) == -1) {
+		printf("Error: Close failure\n");
+	}
+	
 	free(b);
 
 	return 0;

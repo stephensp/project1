@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-c 
 LDFLAGS=
-SOURCES=main.c bridge.c
+SOURCES=main.c bridge.c strhelper.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=3700bridge
 
