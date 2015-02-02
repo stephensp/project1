@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "strhelper.h"
 
 unsigned int strlen_lan_name(const char * name) {
 	return 1 + strlen(name + 1);
@@ -30,6 +31,15 @@ char * create_lan_name(const char * source_name) {
 }
 
 void print_lan_name(const char * name) {
-//	printf("\\0%s", name + 1);
-	printf("0%s", name + 1);
+//	fprintf(f,"\\0%s", name + 1);
+	fprintf(f,"0%s", name + 1);
 }
+int getSource(char * buf) {
+	char *source;
+	memcpy(source, &(buf[12]), 4*sizeof(char));
+	fprintf(f,"Source is: %s", source);	
+	
+	return atoi(source);
+}
+//int getDest(char *buf)
+//

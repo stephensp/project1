@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+use lib '/home/amislove/perl5/lib/perl5';
 use strict;
 use warnings;
 use threads;
@@ -99,7 +100,6 @@ foreach my $bridge (@{ $conf->{"bridges"} }) {
 		if (! exists $revids{$lan}) {
 			my $server = IO::Socket::UNIX->new(
 				Type => SOCK_SEQPACKET,
-#				Type => SOCK_STREAM,
 				Local => get_path($lan),
 				Listen => SOMAXCONN,
 			);
@@ -108,11 +108,11 @@ foreach my $bridge (@{ $conf->{"bridges"} }) {
 
 			add_handle(\$server, "LAN $lan");
 
-			$lans{$server->fileno} = ();
-			$revids{$lan} = $server;
-			mylog("Driver", "Created LAN $lan at file no " . $server->fileno);
-		}
+		$lans{$server->fileno} = ();
+		$revids{$lan} = $server;
+		mylog("Driver", "Created LAN $lan");
 	}
+}
 }
 
 for (my $i=0; $i<$conf->{"hosts"}; $i++) {
@@ -139,10 +139,9 @@ sub get_random_lan {
 
 my $i = 0;
 while (1) {
-	$i++;
 	my $nextevent = get_next_event();
 	my $sleep = $nextevent->{"time"} - (time - $start);
-#	mylog("Driver", "Sleeping for up to $sleep");
+#  mylog("Driver", "Sleeping for up to $sleep");
 
 	my @ready = $sel->can_read($sleep);
 
@@ -159,56 +158,55 @@ while (1) {
 				mylog(get_id(\$fh), "Accepted new connection");
 
 				add_handle(\$sock, get_id(\$fh));
-				$lans{$fh->fileno}{$sock->fileno} = 1;
-				$bridges{$sock->fileno} = $fh;
-			} else {
-				remove_handle(\$fh);
-				mylog(get_id(\$fh), "LAN Disconnected");
-			}
-		} elsif (exists $bridges{$fh->fileno}) {
-			mylog("Driver", "Calling recv() on " . get_id(\$fh));
-			my $msg = "";
-			$fh->recv($msg, 1500);
-			if ($msg) {
-#				mylog(get_id(\$fh), "Read $msg");
-				recv_message($bridges{$fh->fileno}, $msg, get_id(\$fh));
-				broadcast($bridges{$fh->fileno}->fileno, $msg, $fh->fileno);
-#				foreach my $sock (keys %{ $lans{$bridges{$fh->fileno}->fileno}}) {
-#					my $handle = get_handle($sock);
-#					$$handle->send($msg);
-#				}
-			} else {
-				remove_handle(\$fh);
-				delete $lans{$bridges{$fh->fileno}->fileno}{$fh->fileno};
-				mylog(get_id(\$fh), "Bridge disconnected");
-			}
-		} else {
-			my $msg = <$fh>;
-			if ($msg) {
-				chomp($msg);
-				mylog(get_id(\$fh), "$msg");
-			} else {
-				remove_handle(\$fh);
-				mylog(get_id(\$fh), "Bridge disconnected");
-			}
-		}
-	}
+		$lans{$fh->fileno}{$sock->fileno} = 1;
+		$bridges{$sock->fileno} = $fh;
+	} else {
+		remove_handle(\$fh);
+	mylog(get_id(\$fh), "LAN Disconnected");
+      }
+    } elsif (exists $bridges{$fh->fileno}) {
+	    my $msg = "";
+	    $fh->recv($msg, 1500);
+	    if ($msg) {
+#        mylog(get_id(\$fh), "Read $msg");
+		    recv_message($bridges{$fh->fileno}, $msg, get_id(\$fh));
+	    broadcast($bridges{$fh->fileno}->fileno, $msg, $fh->fileno);
+#        foreach my $sock (keys %{ $lans{$bridges{$fh->fileno}->fileno}}) {
+#          my $handle = get_handle($sock);
+#          $$handle->send($msg);
+#        }
+    } else {
+	    remove_handle(\$fh);
+    delete $lans{$bridges{$fh->fileno}->fileno}{$fh->fileno};
+    mylog(get_id(\$fh), "Bridge disconnected");
+      }
+    } else {
+	    my $msg = <$fh>;
+	    if ($msg) {
+		    chomp($msg);
+		    mylog(get_id(\$fh), "$msg");
+    } else {
+	    remove_handle(\$fh);
+    mylog(get_id(\$fh), "Bridge disconnected");
+      }
+    }
+  }
 
-	while (($nextevent = get_next_event())->{"time"} <= (time - $start)) {
-		remove_event();
+  while (($nextevent = get_next_event())->{"time"} <= (time - $start)) {
+	  remove_event();
 
-		if ($nextevent->{"type"} == $STOP) {
-			event_stop($nextevent);
-		} elsif ($nextevent->{"type"} == $BRIDGE_START) {
-			event_start_bridge($nextevent);
-		} elsif ($nextevent->{"type"} == $BRIDGE_STOP) {
-			event_stop_bridge($nextevent);
-		} elsif ($nextevent->{"type"} == $SEND_PACKET) {
-			event_send_packet($nextevent);
-		} else {
-			die "Unrecognized event type " . $nextevent->{"type"};
-		}
-	}
+	  if ($nextevent->{"type"} == $STOP) {
+		  event_stop($nextevent);
+	  } elsif ($nextevent->{"type"} == $BRIDGE_START) {
+		  event_start_bridge($nextevent);
+	  } elsif ($nextevent->{"type"} == $BRIDGE_STOP) {
+		  event_stop_bridge($nextevent);
+	  } elsif ($nextevent->{"type"} == $SEND_PACKET) {
+		  event_send_packet($nextevent);
+	  } else {
+		  die "Unrecognized event type " . $nextevent->{"type"};
+	  }
+  }
 }
 
 sub broadcast {
@@ -228,6 +226,9 @@ sub broadcast {
 sub get_path {
 	my ($id) = @_;
 
+	my ($lan_name) =  '\0' . get_name($id);
+	mylog("Driver", "lan name is  $lan_name");
+#	return $lan_name
 #	return "\0" . get_name($id);
 	return "0" . get_name($id);
 }
@@ -352,10 +353,10 @@ sub event_start_bridge {
 	my $subprocess = open3($IN, $OUT, $ERR, "./3700bridge $id $args");
 	add_handle(\$OUT, "Bridge $id");
 	add_handle(\$ERR, "Bridge $id");
-	$OUT->autoflush(1);
-	$ERR->autoflush(1);
+$OUT->autoflush(1);
+$ERR->autoflush(1);
 
-	$processes{$id} = $subprocess;
+  $processes{$id} = $subprocess;
 }
 
 sub event_stop_bridge {
