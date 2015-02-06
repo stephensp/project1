@@ -180,6 +180,17 @@ while (1) {
 				chomp($msg);
 				mylog(get_id(\$fh), "$msg");
 			} else {
+				my $has_message = 0;
+				while (my $msg = <$fh>) {
+					chomp($msg);
+					mylog(get_id(\$fh), "$msg");
+					$has_message = 1;
+				}
+
+				if ($has_message == 0) {
+					remove_handle(\$fh);
+					mylog(get_id(\$fh), "Bridge disconnected");
+				}
 				remove_handle(\$fh);
 				mylog(get_id(\$fh), "Bridge disconnected");
 			}
