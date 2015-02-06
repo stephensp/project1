@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-c -Wall 
 INCLUDES= -I./jansson -I./include
-LDFLAGS= -L./src/.libs 
+LDFLAGS= -L./jansson/.libs/libjansson.a
 SOURCES=./src/main.c ./src/bridge.c ./src/strhelper.c ./src/decodehelper.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=3700bridge
