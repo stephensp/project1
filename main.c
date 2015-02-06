@@ -17,13 +17,7 @@ int main(int argc, char *argv[]) {
 	bridge *b;
 	int i;
 	
-	f = fopen("debug.txt", "w");
-	if(f == NULL) {
-		printf("Error opening debug file\n");
-		fflush(stdout);
-	}
 	printf("Hello world\n");
-	fflush(stdout);
 	// Check to make sure there are at least 2 arguements
 
 	if(argc < 3) {
@@ -52,7 +46,6 @@ int main(int argc, char *argv[]) {
 		b->lans[i].name = create_lan_name(argv[2+i]);
 		printf("Setting lan name 0%s \n", b->lans[i].name);
 	}
-	printf( "There are %d lans \n", b->numLans);
 
 	printf("Bridge %04x starting up\n", b->id);
 
