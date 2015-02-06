@@ -5,6 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include "bridge.h"
 #include "strhelper.h"
 
@@ -16,11 +20,16 @@ int main(int argc, char *argv[]) {
 	f = fopen("debug.txt", "w");
 	if(f == NULL) {
 		printf("Error opening debug file\n");
+		fflush(stdout);
 	}
-	fprintf(f, "Hello world\n");
+	printf("Hello world\n");
+	fflush(stdout);
 	// Check to make sure there are at least 2 arguements
+
 	if(argc < 3) {
-		fprintf(f,"Usage: 3700client <id> <LAN> [<LAN> [<LAN ...]]\n");
+		printf( "%d parameters passed\n", argc);
+		printf("Usage: 3700client <id> <LAN> [<LAN> [<LAN ...]]\n");
+		fflush(stdout);
 		return 0;
 	}
 
@@ -28,37 +37,45 @@ int main(int argc, char *argv[]) {
 	b = malloc(sizeof(bridge));
 
 	// Set some variables
-	b->id = atoi(argv[1]);
 	sscanf(argv[1], "%x", &(b->id));	
 
 	b->numLans = 0;
 	for(i = 2; i < argc; i++) {
 		b->numLans++;
 	}
+
 	b->lans = (lan *)malloc(b->numLans * sizeof(lan));
+
 	// Let's make this run with just 1 LAN for now
 	for(i = 0; i < b->numLans; i++) {
+		b->lans[i].name = malloc(sizeof(argv[2+1]));
 		b->lans[i].name = create_lan_name(argv[2+i]);
-		fprintf(f,"Setting lan name 0%s \n", b->lans[i].name);
+		printf("Setting lan name 0%s \n", b->lans[i].name);
 	}
+	printf( "There are %d lans \n", b->numLans);
 
-	fprintf(f,"Bridge %04x starting up\n", b->id);
+	printf("Bridge %04x starting up\n", b->id);
 
+	fflush(stdout);
 	if(bridgeInit(b) == -1) {
-		fprintf(f,"Error: Init failure\n");
+		printf("Error: Init failure\n");
 	}
 
 	// Now run!
 	if(bridgeRun(b) == -1) {
-		fprintf(f,"Error: Run failure\n");
+		printf("Error: Run failure\n");
 	}
 
-	// Clean up
+//	// Clean up
 	if (bridgeClose(b) == -1) {
-		fprintf(f,"Error: Close failure\n");
-	}
-	
+		printf("Error: Close failure\n");
+      	}
+
+	fflush(stdout);
+
 	free(b);
+
+	fclose(f);
 
 	return 0;
 }

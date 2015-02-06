@@ -2,8 +2,9 @@
 #ifndef BRIDGE_H
 #define BRIDGE_H
 
+#define MAXFD	4681250		// /proc/sys/fs/file-max
+#define	MAXBUF	256
 typedef struct {
-	char	buf[256];
 	char 	*name;
 	int	sockfd;
 	int	bytes_read;
@@ -15,23 +16,34 @@ typedef struct {
 	int 	id;
 	int	numLans;
 	int	numHosts;
+	fd_set	fdsoc;
 
 
 } bridge;
 
 typedef struct {
 	int	time;
-	int	lanNum;
+	lan	lanOn;
 	short	name;
 } host;
+
+typedef struct {
+	char	*buf;
+	int	byte_written;
+	int	bytes_read;
+	short	src;
+	short	dest;
+} message;
 
 host *host_list;
 
 int bridgeInit(bridge *b);
 int socketInit(lan *l);
 int bridgeRun(bridge *b);
-int findHost(bridge *b, short hostName);
+int waitMessage(bridge *b);
+lan* findHost(short hostName);
 int addHost(bridge *b, int lanNum, int hostName);
+int writeToAllLans(bridge *b, char *buf, int bytes_read);
 int bridgeClose(bridge * b);
 
 

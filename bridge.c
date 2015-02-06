@@ -18,11 +18,17 @@ int bridgeInit(bridge *b) {
 		if(status == -1) {
 			return status;
 		}
-
 	}
 
 	b->numHosts = 0;
 	
+	FD_ZERO(&b->fdsoc); 
+
+	// Add each LAN socket 
+	for(i = 0; i < b->numLans; i++ ) {
+		FD_SET(b->lans[1].sockfd, &(b->fdsoc));
+	}
+
 	return 0;
 }
 
@@ -30,86 +36,166 @@ int socketInit(lan *l) {
 	struct	sockaddr_un soc;
 	int	status;
 
+	memset(&soc, 0, sizeof(soc));
 	l->sockfd = socket(AF_UNIX, SOCK_SEQPACKET, 0);
+	printf( "setting %s sockfd to %d\n", &(l->name[1]), l->sockfd);
+	fflush(stdout);
 	if(l->sockfd == -1) {
 		char * error_buffer = malloc(256);
 		sprintf(error_buffer,
 			"Error: failed to create socket.");
 		perror(error_buffer);
+		fflush(stdout);
 		return -1;
 	}
 
 	soc.sun_family = AF_UNIX;
+	
+	printf( "l->name = %d%s\n",l->name[0], &(l->name[1]));
+	fflush(stdout);
 	strcpy_lan_name(soc.sun_path, l->name);
-	fprintf(f,"soc.sun_path: 0%s\n", soc.sun_path);
 
 	status = connect(l->sockfd, (struct sockaddr *) &soc, sizeof(soc));
 	if(status == -1) {
-		fprintf(f,"Error: failed to connet to server\n");
+		printf("Error: failed to connet to server\n");
 		char * error_buffer = malloc(256);
 		sprintf(error_buffer,
 			"Error: failed to connect to server at '\\0%s' ",
 			soc.sun_path + 1);
 		perror(error_buffer);
+		fflush(stdout);
 		return -1;
 	}
+	printf( "Sucessfully connected to lan %s\n", &(l->name[1]));
+	fflush(stdout);
 
 	return 0;
 }
 int bridgeRun(bridge *b) {
+	char	buf[MAXBUF];
+	int	status, bytes_read;
+	int	i, j;
 	
-	lan	*lcur;
-	int	i, source;
-	for(i = 0; i < b->numLans; i++) {
-		lcur = &(b->lans[i]);
-		memset(lcur->buf, 0x00, sizeof(lcur->buf));
-		if( (lcur->bytes_read = read(lcur->sockfd, lcur->buf, sizeof(lcur->buf))) > 0) {	
-			// Find the object associate with host
-			fprintf(f,"Read %d bytes: %s\n", lcur->bytes_read, lcur->buf);
-			source = getSource(lcur->buf);
-			fprintf(f,"dec source is %04x\n", source);
 
-		}
-	}
-/*	while( (bytes_read = read(b->sockfd, buf, sizeof(buf))) > 0) {
-		bytes_written = write(b->sockfd, buf, bytes_read);
-		if (bytes_written != bytes_read) {
-			if (bytes_written > 0) {
-				fprintf(stderr, "Error: Partial write");
-			} else {
-				perror("Write error");
-				exit(-1);
+//	status = waitMessage(b);
+//	while(status >= 0) {	
+	for(j = 0; j < 2; j++) {
+		status = waitMessage(b);
+		printf("returned status message is %d\n", status);
+		fflush(stdout);
+		for(i = 0; i < b->numLans; i++) {
+			printf("Checking lan# %d\n", i);
+			fflush(stdout);
+			if(FD_ISSET(b->lans[i].sockfd, &b->fdsoc) != 0){
+				fprintf(f , "Lan %s is ready\n", 
+						&(b->lans[i].name[1]));
+				bytes_read = read(b->lans[i].sockfd, buf, MAXBUF);
+				fflush(stdout);
+				printf( "%d bytes read from lan %s\n", bytes_read
+						, &(b->lans[i].name[1]));
+				printf( "Message read: %s\n", buf);
+
 			}
 		}
-		memset(buf, 0x00, sizeof(buf));
 	}
-*/
 	return 0;
 }
 
-int findHost(bridge *b, short hostName) {
-	int	i;
+int waitMessage(bridge *b) {
+	struct	timeval	timeout;
+	int	i, rs; 
+
+	// Set time limit
+	timeout.tv_sec = 3;
+	timeout.tv_usec = 0;
 	
-	for(i = 0; i < b->numHosts; i++) {
+
+//	for(i = 0; i < b->numLans; i++) {
+//		FD_CLR(b->lans[i].sockfd, &(b->fdsoc));
+//	}
+	FD_ZERO(&b->fdsoc); 
+
+	// Add each LAN socket 
+	for(i = 0; i < b->numLans; i++ ) {
+		FD_SET(b->lans[1].sockfd, &(b->fdsoc));
+	}
+
+	rs = select(sizeof(b->fdsoc)*MAXFD, &b->fdsoc, NULL, NULL, 
+			&timeout);
+
+	printf("returnig from waitMessage\n");
+	printf( "rs is?? %d\n", rs);
+	fflush(stdout);
+	if(rs == -1) {
+		printf( "Error: Select error\n");
+		perror("Select error");
+		fflush(stdout);
+		return -1;
+	}
+	if(rs == 0) {
+		printf( "Select timed out\n");
+		fflush(stdout);
+		return -2;
+	}
+
+	return 0;
+
+}
+
+lan* findHost(short hostName) {
+	int	length, i;
+
+	length = sizeof(host_list)/sizeof(host);
+	printf( "sizeof host_list is %d\n", length);
+	fflush(stdout);
+	for(i = 0; i < length; i++) {
 		if(host_list[i].name == hostName) {
-			return i;
+			return &(host_list[i].lanOn);
 		}
 	}
 
 	// This means the host isn't in our current list
-	return -1;
+	return NULL;
 }
 
 int addHost(bridge *b, int lanNum, int hostName) {
 	host_list = (host *)realloc(host_list, sizeof(host_list) + sizeof(host));
 	b->numHosts++;
 	
-	host_list[b->numHosts-1].lanNum = lanNum;
+	host_list[b->numHosts-1].lanOn = b->lans[lanNum];
 	host_list[b->numHosts-1].name = hostName;
 
 	
 	return 0;
 }
+int writeToAllLans(bridge *b, char *buf, int bytes_read) {
+	int 	bytes_written;
+	int 	i;
+
+	
+	for(i = 0; i < b->numLans; i++) {
+		
+		printf("bytes_read = %d, bytes_written = %d\n", bytes_read, bytes_written);
+		fflush(stdout);
+		bytes_written = write(b->lans[i].sockfd, buf, bytes_read);
+		printf( "Writing %s to %s \n", buf, &(b->lans[i].name[1]));
+		fflush(stdout);
+		if(bytes_written != bytes_read) {
+			if (bytes_written > 0) {
+				printf( "Error: Partial write");
+				fprintf(stderr, "Error: Partial write");
+				fflush(stdout);
+			} else {
+				printf( "Error: No write");
+				perror("Write error");
+				fflush(stdout);
+			}
+			return -1;
+		}
+	}
+	return 0;
+}
+
 int bridgeClose(bridge * b) {
 	int 	i;
 	
