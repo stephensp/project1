@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+use lib '/home/amislove/perl5/lib/perl5';
 use strict;
 use warnings;
 use threads;
@@ -180,17 +181,6 @@ while (1) {
 				chomp($msg);
 				mylog(get_id(\$fh), "$msg");
 			} else {
-				my $has_message = 0;
-				while (my $msg = <$fh>) {
-					chomp($msg);
-					mylog(get_id(\$fh), "$msg");
-					$has_message = 1;
-				}
-
-				if ($has_message == 0) {
-					remove_handle(\$fh);
-					mylog(get_id(\$fh), "Bridge disconnected");
-				}
 				remove_handle(\$fh);
 				mylog(get_id(\$fh), "Bridge disconnected");
 			}
@@ -321,13 +311,11 @@ sub event_stop {
 	my @dmsg = ();
 	foreach my $msg (keys %messages) {
 		if ($messages{$msg} == 0) {
-			my $t = decode_json($msg . "");
-			push @rmsg, $t->{"message"}->{"id"}+0;
+			push @rmsg, $msg;
 		}
 
 		if ($messages{$msg} > 1) {
-			my $t = decode_json($msg . "");
-			push @dmsg, $t->{"message"}->{"id"}+0;
+			push @dmsg, $msg;
 		}
 	}
 
@@ -371,7 +359,7 @@ sub event_send_packet {
 	my $socket = $hosts{$event->{"source"}};
 	my $msg = encode_json({'source' => $event->{"source"}, 'dest' => $event->{"dest"}, 'type' => $DATA, 'message' => { 'id' => $event->{"id"} } });
 
-	$messages{$msg} = 0; 
+	$messages{$event->{"id"} + 0} = 0; 
 
 	broadcast($socket->fileno, $msg, -1);
 	mylog("Host " . $event->{"source"}, "Sent message " . $event->{"id"} . " to " . $event->{"dest"});
@@ -394,7 +382,7 @@ sub recv_message {
 	my $message = decode_json($msg);
 	if ($message->{"type"} eq $DATA) {    
 		if ((exists $hosts{$message->{"dest"}}) && ($lan == $hosts{$message->{"dest"}})) {
-			$messages{$msg} ++;
+			$messages{$message->{"message"}->{"id"} + 0} ++;
 			mylog("Host " . $message->{"dest"}, "Received message " . $message->{"message"}->{"id"} . " from " . $message->{"source"});
 		}
 	}
