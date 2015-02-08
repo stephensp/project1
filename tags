@@ -1,134 +1,26 @@
-$(EXECUTABLE	makefile	/^$(EXECUTABLE): $(OBJECTS)$/
-($a	test	118
-($event	run	286
-($event	run	306
-($event	run	344
-($event	run	363
-($event	run	370
-($fileno	run	264
-($host, $lan	run	382
-($id	run	232
-($id	run	238
-($id, $root, $cost, $port	run	277
-($lan, $msg, $from	run	218
-($lan, $msg, $name	run	390
-($name, $len	test	107
-($obj	run	258
-($obj	run	270
-($obj, $msg	run	244
-($obj, $name	run	250
-($problem, $args	test	64
-($problem, $args, $pdr	test	45
-($problem, $packets, $pdr	test	97
-.c.o	makefile	/^.c.o:$/
-BRIDGE	test	7
-BRIDGE_START	run	63
-BRIDGE_STOP	run	64
-CC	makefile	/^CC=gcc$/
-CFLAGS	makefile	/^CFLAGS=-c -Wall $/
-CODEDIR	test	5
-DATA	run	26
-ERR	run	352
-EXECUTABLE	makefile	/^EXECUTABLE=3700bridge$/
-IN	run	350
-INCLUDES	makefile	/^INCLUDES= -I.\/jansson -I.\/include$/
-LDFLAGS	makefile	/^LDFLAGS= -L.\/src\/.libs $/
-OBJECTS	makefile	/^OBJECTS=$(SOURCES:.c=.o)$/
-OUT	run	351
-PORT_CONNECT	run	65
-PORT_DISCONNECT	run	66
-RUN	test	8
-SEMESTER	test	4
-SEND_PACKET	run	67
-SLEEP_TIMEOUT	testcode	33
-SOCK_PATH	testcode	44
-SOURCES	makefile	/^SOURCES=.\/src\/main.c .\/src\/bridge.c .\/src\/strhelpe/
-STATSDIR	test	6
-STOP	run	62
-TOTAL_PACKETS	run	85
-WAIT	run	28
-all	makefile	/^all: $(SOURCES) $(EXECUTABLE)$/
-args	run	347
-bridges	run	33
-clean	makefile	/^clean: $/
-client	testcode	46
-conf	run	52
-config	run	45
-dmsg	run	317
-dmsg	run	321
-events	run	69
-handle	run	223
-handles	run	38
-has_message	run	183
-hash	run	279
-hosts	run	40
-hosts	run	130
-id	run	90
-id	run	345
-id	testcode	31
-ids	run	34
-lans	run	32
-lans	run	135
-last_sent	testcode	63
-main::add_event	run	/^sub add_event {$/
-main::add_handle	run	/^sub add_handle {$/
-main::add_host	run	/^sub add_host {$/
-main::broadcast	run	/^sub broadcast {$/
-main::dump_events	run	/^sub dump_events {$/
-main::event_send_packet	run	/^sub event_send_packet {$/
-main::event_start_bridge	run	/^sub event_start_bridge {$/
-main::event_stop	run	/^sub event_stop {$/
-main::event_stop_bridge	run	/^sub event_stop_bridge {$/
-main::format_bytes	test	/^sub format_bytes {$/
-main::format_message	run	/^sub format_message {$/
-main::get_handle	run	/^sub get_handle {$/
-main::get_id	run	/^sub get_id {$/
-main::get_name	run	/^sub get_name {$/
-main::get_next_event	run	/^sub get_next_event {$/
-main::get_path	run	/^sub get_path {$/
-main::get_random_host	run	/^sub get_random_host {$/
-main::get_random_host_name	run	/^sub get_random_host_name {$/
-main::get_random_lan	run	/^sub get_random_lan {$/
-main::mylog	run	/^sub mylog {$/
-main::pad	test	/^sub pad {$/
-main::post	test	/^sub post {$/
-main::recv_message	run	/^sub recv_message {$/
-main::remove_event	run	/^sub remove_event {$/
-main::remove_handle	run	/^sub remove_handle {$/
-main::runPerfTest	test	/^sub runPerfTest {$/
-main::runTest	test	/^sub runTest {$/
-message	run	394
-messages	run	86
-msg	run	162
-msg	run	178
-msg	run	372
-msg	testcode	74
-nextevent	run	140
-packets	test	70
-pdr	test	69
-portlookup	testcode	40
-ports	testcode	39
-processes	run	36
-ready	run	144
-ready	testcode	70
-revids	run	35
-rmsg	run	316
-rmsg	run	320
-sel	run	30
-sel	testcode	36
-server	run	100
-sleep	run	141
-sleep	testcode	67
-sock	run	148
-sock	testcode	88
-socket	run	371
-start	run	74
-start	run	92
-stop	run	93
-subprocess	run	353
-t	run	324
-t	run	329
-tmsg	run	315
-u	test	99
-username	run	20
-username	test	100
+Mmain	src/main.c	/^int main(int argc, char *argv[]) {$/
+addHost	src/bridge.c	/^int addHost(bridge *b, int port, int hostName) {$/
+addPair	src/decodehelper.c	/^void addPair(json_object *jobj, char *type, char */
+bridgeClose	src/bridge.c	/^int bridgeClose(bridge * b) {$/
+bridgeInit	src/bridge.c	/^int bridgeInit(bridge *b) {$/
+bridgeRun	src/bridge.c	/^int bridgeRun(bridge *b) {$/
+create_lan_name	src/strhelper.c	/^char * create_lan_name(const char * source_name) {/
+decodeBpdu	src/decodehelper.c	/^bpdu* decodeBpdu(packet *m) {$/
+encodeBpdu	src/decodehelper.c	/^const char* encodeBpdu(bridge *b) {$/
+findHost	src/bridge.c	/^lan* findHost(int hostName) {$/
+getDest	src/strhelper.c	/^int getDest(char *buf) {$/
+getSource	src/strhelper.c	/^int getSource(char * buf) {$/
+getValues	src/decodehelper.c	/^int getValues(json_object *jobj, packet *m) {$/
+jsonDecode	src/decodehelper.c	/^int jsonDecode(packet *m) {$/
+jsonDecode	src/decodehelper_tmp.c	/^int jsonDecode(message *m) {$/
+print_lan_name	src/strhelper.c	/^void print_lan_name(const char * name) {$/
+sendBpdu	src/bridge.c	/^int sendBpdu(bridge *b) {$/
+sendPacket	src/bridge.c	/^int sendPacket(bridge *b, packet *p) {$/
+setValues	src/decodehelper.c	/^int setValues(json_object *val, char * key, packet/
+socketInit	src/bridge.c	/^int socketInit(lan *l) {$/
+strcpy_lan_name	src/strhelper.c	/^void strcpy_lan_name(char * dest, const char * src/
+strdup_lan_name	src/strhelper.c	/^char * strdup_lan_name(const char * name) {$/
+strlen_lan_name	src/strhelper.c	/^unsigned int strlen_lan_name(const char * name) {$/
+updateBpdu	src/bridge.c	/^int updateBpdu(bridge *b, packet *p) {$/
+waitPacket	src/bridge.c	/^int waitPacket(bridge *b) {$/
+writeToAllLans	src/bridge.c	/^int writeToAllLans(bridge *b, packet *p) {$/

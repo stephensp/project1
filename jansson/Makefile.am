@@ -1,26 +1,10 @@
-EXTRA_DIST = jansson.def
+EXTRA_DIST = CHANGES LICENSE README.rst CMakeLists.txt cmake android
+SUBDIRS = doc src test
 
-include_HEADERS = jansson.h jansson_config.h
+# "make distcheck" builds the dvi target, so use it to check that the
+# documentation is built correctly.
+dvi:
+	$(MAKE) SPHINXOPTS_EXTRA=-W html
 
-lib_LTLIBRARIES = libjansson.la
-libjansson_la_SOURCES = \
-	dump.c \
-	error.c \
-	hashtable.c \
-	hashtable.h \
-	hashtable_seed.c \
-	jansson_private.h \
-	load.c \
-	lookup3.h \
-	memory.c \
-	pack_unpack.c \
-	strbuffer.c \
-	strbuffer.h \
-	strconv.c \
-	utf.c \
-	utf.h \
-	value.c
-libjansson_la_LDFLAGS = \
-	-no-undefined \
-	-export-symbols-regex '^json_' \
-	-version-info 11:0:7
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = jansson.pc

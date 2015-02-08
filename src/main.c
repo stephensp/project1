@@ -18,8 +18,8 @@ int main(int argc, char *argv[]) {
 	int i;
 	
 	printf("Hello world\n");
-	// Check to make sure there are at least 2 arguements
 
+	// Check to make sure there are at least 2 arguements
 	if(argc < 3) {
 		printf( "%d parameters passed\n", argc);
 		printf("Usage: 3700client <id> <LAN> [<LAN> [<LAN ...]]\n");
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 		printf("Error: Run failure\n");
 	}
 
-//	// Clean up
+	// Clean up
 	if (bridgeClose(b) == -1) {
 		printf("Error: Close failure\n");
       	}
