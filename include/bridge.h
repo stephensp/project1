@@ -41,6 +41,7 @@ typedef struct {
 	int	time;
 	lan	lanOn;
 	int	name;
+	int	port;
 } host;
 
 typedef struct {
@@ -65,6 +66,7 @@ int 	waitPacket(bridge *b);
 int	sendPacket(bridge *b, packet *p);
 lan*	findHost(int hostName);
 int 	addHost(bridge *b, int lanNum, int hostName);
+void	printHostlist(bridge *b);
 int 	writeToAllLans(bridge *b, packet *p);
 int 	bridgeClose(bridge * b);
 

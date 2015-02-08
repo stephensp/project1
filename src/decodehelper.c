@@ -22,9 +22,7 @@ bpdu* decodeBpdu(packet *m) {
 
 	newbpdu = (bpdu *)malloc(sizeof(bpdu));
 
-	printf("decoding BPDU\n");
 	json_object_object_foreach(m->message, key, val) {
-		printf("key is %s\n", key);
 		type = json_object_get_type(val);
 		if(strcmp(key, "root") == 0) {
 			if(type == json_type_string) {
@@ -144,7 +142,6 @@ int setValues(json_object *val, char * key, packet *m) {
 	if(strcmp(key, "source") == 0) {
 		if(type == json_type_string) {
 			sscanf(json_object_get_string(val), "%x", &(m->src));
-			printf("m->src is %08x\n", m->src);
 			return 0;
 		}else {
 			printf("Error: source val is of wrong json type\n");
@@ -155,7 +152,6 @@ int setValues(json_object *val, char * key, packet *m) {
 	if(strcmp(key, "dest") == 0) {
 		if(type == json_type_string) {
 			sscanf(json_object_get_string(val), "%x", &(m->dest));
-			printf("m->dest is %08x\n", m->dest);
 			return 0;
 		}else {
 			printf("Error: dest val is of wrong json type\n");
@@ -166,12 +162,10 @@ int setValues(json_object *val, char * key, packet *m) {
 	if(strcmp(key, "type") == 0) {
 		if(type == json_type_string) {
 			if(strcmp(json_object_get_string(val), "bpdu") == 0) {
-				printf("setting m->type to bpdu\n");
 				m->type = BPDU;
 				return 0;
 			}
 			if(strcmp(json_object_get_string(val), "data") == 0) {
-				printf("setting m->type to data\n");
 				m->type = DATA;
 				return 0;
 			}

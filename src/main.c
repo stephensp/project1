@@ -40,10 +40,11 @@ int main(int argc, char *argv[]) {
 
 	b->lans = (lan *)malloc(b->numLans * sizeof(lan));
 
-	// Let's make this run with just 1 LAN for now
+	// Add each lan to bridge structure and give each one a port num
 	for(i = 0; i < b->numLans; i++) {
 		b->lans[i].name = malloc(sizeof(argv[2+1]));
 		b->lans[i].name = create_lan_name(argv[2+i]);
+		b->lans[i].port = i;
 		printf("Setting lan name 0%s \n", b->lans[i].name);
 	}
 
