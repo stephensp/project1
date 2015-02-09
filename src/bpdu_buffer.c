@@ -26,11 +26,14 @@ void turnoffPorts(bridge *b) {
 	
 	for(i = 0; i < b->num_total_lans; i++) {
 		if(b->root->port == i) {
+			b->on_lans[i] = &(b->lans[i]);
 			b->bpdu_buf_on[i] = b->bpdu_buf[i];
 		}
 		else if(isDesignatedPort(b, i)){
+			b->on_lans[i] = &(b->lans[i]);
 			b->bpdu_buf_on[i] = b->bpdu_buf[i];
 		}else {
+			b->on_lans[i] = 0;
 			b->bpdu_buf_on[i] = 0;
 			printf("Disabled port: %08x/%d\n", b->id, i);
 			fflush(stdout);
@@ -42,11 +45,10 @@ void turnoffPorts(bridge *b) {
 int isDesignatedPort(bridge *b, int port) {
 
 	// Compare BPDU's
-	printf("port is %d\n", port);
-	fflush(stdout);
-	printf("b->root->cost = %d\n", b->root->cost);
-	fflush(stdout);
-	printf("port->cost is %d\n", b->bpdu_buf[port]->cost);
+	if(b->bpdu_buf[port] == NULL) {
+		// No BPDU for this port yet, assume designated
+		return 1;
+	}
 	if(b->root->cost < b->bpdu_buf[port]->cost) {
 		return 1;
 	}else if(b->root->cost == b->bpdu_buf[port]->cost) {

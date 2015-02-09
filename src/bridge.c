@@ -37,6 +37,14 @@ int bridgeInit(bridge *b) {
 	b->root->cost = 0;
 	b->root->port = -1; // No port for now
 	create_bpdubuffer(b);
+	
+	printf("New root: %08x/%08x\n", b->id, b->root->rootid);
+	// Init on_lans array 
+	b->on_lans = (lan **)malloc(sizeof(lan *) * b->num_total_lans);
+	memset(b->on_lans, 0, sizeof(lan *) * b->num_total_lans);
+
+	// Init host_list
+	memset(host_list, -1, 0xffff * sizeof(int));
 	return 0;
 }
 
@@ -90,39 +98,37 @@ int bridgeRun(bridge *b) {
 	while(1) {	
 		status = waitPacket(b);
 		while(status == -2) {
-			// Try one more time
 			status = waitPacket(b);
-//			if(status == -2) {
-//			}
 		}
 		memset(buf, 0, MAXBUF);
 		for(i = 0; i < b->num_total_lans; i++) {
 			lanCur = &(b->lans[i]);
-			if(FD_ISSET(lanCur->sockfd, &b->fdsoc) != 0){
+			if(FD_ISSET(lanCur->sockfd, &b->fdsoc) != 0) {
 				p->port = lanCur->port;
 				p->bytes_read = read(lanCur->sockfd, buf, 
 						MAXBUF);
-				printf( "%d bytes read from lan %s\n", 
-						p->bytes_read,
-						&(lanCur->name[1]));
-				printf( "Message read: %s\n", buf);
-				printf( "Message port is: %d\n", p->port);
-				fflush(stdout);
-
-				// Let's just write to all LANS for now
+//				printf( "%d bytes read from lan %s\n", 
+//						p->bytes_read,
+//						&(lanCur->name[1]));
+				
+//				printf( "Message port is: %d\n", p->port);
+//				fflush(stdout);
+//
+//				// Let's just write to all LANS for now
 				if(jsonDecode(p) != 0) {
 					printf("Failing decoding messsage,	message dropped\n");
 					break;
 				}
 				if(p->type == BPDU) {
-					printf("found a BPDU\n");
 					if(updateBpdu(b, p) != 0) {
 						printf("Error update BPDU\n");
 					}
 
 				}
 				if(p->type == DATA) {
-					printf("found a data packet\n");
+					printf("Received %s on port %d from source %08x to dest %08x\n",
+							p->message, p->port, 
+							p->src, p->dest);
 					if(sendPacket(b, p) != 0) {
 						printf("Error sending\n");
 					}
@@ -141,9 +147,6 @@ int updateBpdu(bridge *b, packet *p) {
 	int	status = 0;
 
 	newr = decodeBpdu(p);
-//	length = sizeof(b->bpdu_buf)/sizeof(bpdu*);
-	printf("rootid %08x, cost %d, port %d\n", newr->rootid, newr->cost,
-			newr->port);
 
 	fflush(stdout);
 	
@@ -172,9 +175,9 @@ int sendBpdu(bridge *b) {
 	const char* buf;
 	int i;
 
-	buf = encodeBpdu(b);
 
 	for(i = 0; i < b->num_total_lans; i++) {
+		buf = encodeBpdu(b, i);
 		write(b->lans[i].sockfd, buf, MAXBUF);
 	}
 	
@@ -216,76 +219,75 @@ int waitPacket(bridge *b) {
 }
 
 int sendPacket(bridge *b, packet *p) {
-	writeToAllLans(b, p);
-//	lan 	*dest;
-//	int	bytes_written;
-//
-//	dest = findHost(p->dest);
-//	if(dest == NULL) {
-//		// We don't know where host is, send on all LANS
-//		printf("Writing to all LANS\n");
-//		if(writeToAllLans(b, p) != 0) {
-//			printf("Error: from writing to all LANS\n");
-//
-//		}
-//
-//	}else{
-//		
-//		bytes_written = write(dest->sockfd, p->buf, p->bytes_read);
-//		printf("bytes_read = %d, bytes_written = %d\n", p->bytes_read, bytes_written);
-//		fflush(stdout);
-//		printf( "Writing %s to %s \n", p->buf, &(dest->name[1]));
-//		fflush(stdout);
-//	}
-//		
-//
-//	if(findHost(p->src) == NULL) {
-//		addHost(b, p->port, p->src); 
-//	}
+	lan 	*dest;
+	int	dest_port;
+
+	dest_port = host_list[p->dest];
+	if(dest_port == -1) {
+		// We don't know where host is, send on all LANS
+		if(writeToAllOnLans(b, p) != 0) {
+			printf("Error: from writing to all LANS\n");
+
+		}
+
+	}else{
+
+		dest = &(b->lans[dest_port]);	
+		write(dest->sockfd, p->buf, p->bytes_read);
+		printf("Forwarding message %s to port %d\n", p->message, 
+				dest_port);
+		fflush(stdout);
+	}
+		
+
+	// Overwrite whatever was there, just to make sure it is uptodate
+	host_list[p->src] = p->port;
+
+//	printHostlist(b);
+
 	return 0;
 
 }
-lan* findHost(bridge *b, int hostName) {
-	int	length, i;
-
-	length = b->numHosts;
-
-	for(i = 0; i < length; i++) {
-		printf("checking %d against %d\n", host_list[i].name, hostName);
-		if(host_list[i].name == hostName) {
-			return &(host_list[i].lanOn);
+void printHostlist(bridge *b) {
+	int i;
+	printf("***********Printing Host List********************\n");
+	printf("num_total_lans = %d\n", b->num_total_lans);
+	for(i = 0; i < 0xffff; i++) {
+		if(host_list[i] != -1) {
+			printf("host: %04x on port %d\n", i, host_list[i]);
 		}
 	}
-
-	// This means the host isn't in our current list
-	return NULL;
-}
-
-int addHost(bridge *b, int port, int hostName) {
-	host_list = (host *)realloc(host_list, sizeof(host_list) + 
-			sizeof(host));
-	b->numHosts++;
-	
-	printf("Adding host: %d to lan%s\n", hostName, &(b->lans[port].name[1])); 
-	host_list[b->numHosts-1].lanOn = b->lans[port];
-	host_list[b->numHosts-1].name = hostName;
-	host_list[b->numHosts-1].port = port;
-	
-
-	
-	return 0;
-}
-
-void printHostlist(bridge* b) {
-	int i;
-
-	printf("***********Host list is*********\n");
-	for(i = 0; i < b->numHosts; i++) {
-		printf("Host: %08x on lan %s, portnum %d\n", host_list[i].name, 
-				&(host_list[i].lanOn.name[1]), 
-				host_list[i].port);
-	}
 	fflush(stdout);
+}
+
+int writeToAllOnLans(bridge *b, packet *p) {
+	int	bytes_written;	
+	int	i;
+
+	printf( "Broadcasting message %s to all ports\n", p->message);
+	for(i = 0; i < b->num_total_lans; i++) {
+		if(i == p->port) {
+			continue;	
+		}
+		if(b->on_lans == NULL) {
+			continue;
+		}
+		bytes_written = write(b->lans[i].sockfd, p->buf, p->bytes_read);
+		fflush(stdout);
+		if(bytes_written != p->bytes_read) {
+			if (bytes_written > 0) {
+				printf( "Error: Partial write"); 
+				fprintf(stderr, "Error: Partial write");
+				fflush(stdout);
+			} else {
+				printf( "Error: No write");
+				perror("Write error");
+				fflush(stdout);
+			}
+			return -1;
+		}
+	}
+	return 0;
 
 }
 int writeToAllLans(bridge *b, packet *p) {
@@ -299,13 +301,10 @@ int writeToAllLans(bridge *b, packet *p) {
 			continue;	
 		}
 		bytes_written = write(b->lans[i].sockfd, p->buf, bytes_read);
-		printf("bytes_read = %d, bytes_written = %d\n", bytes_read, bytes_written);
-		fflush(stdout);
-		printf( "Writing %s to %s \n", p->buf, &(b->lans[i].name[1]));
-		fflush(stdout);
 		if(bytes_written != bytes_read) {
 			if (bytes_written > 0) {
-				printf( "Error: Partial write"); fprintf(stderr, "Error: Partial write");
+				printf( "Error: Partial write"); 
+				fprintf(stderr, "Error: Partial write");
 				fflush(stdout);
 			} else {
 				printf( "Error: No write");
@@ -321,7 +320,6 @@ int writeToAllLans(bridge *b, packet *p) {
 int bridgeClose(bridge * b) {
 	int 	i;
 	
-	printf("Closing sockets\n");
 	fflush(stdout);
 	for(i = 0; i < b->num_total_lans; i++) {
 		close(b->lans[i].sockfd);

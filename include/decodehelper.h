@@ -6,7 +6,7 @@
 
 int 		jsonDecode(packet *m);
 bpdu*	 	decodeBpdu(packet *m);
-const char* 	encodeBpdu(bridge *b);
+const char* 	encodeBpdu(bridge *b, int port);
 void 		addPair(json_object *jobj, char *type, char *val);
 int 		encodeMessage(packet *m);
 int 		getValues(json_object *jobj, packet *m);

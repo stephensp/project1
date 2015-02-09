@@ -30,6 +30,7 @@ typedef struct {
 
 typedef struct {
 	lan	*lans;
+	lan	**on_lans;
 	int 	id;
 	int	num_total_lans;
 	int	numHosts;
@@ -59,7 +60,6 @@ typedef struct {
 	int		port;
 } packet;
 
-host *host_list;
 
 int 	bridgeInit(bridge *b);
 int 	socketInit(lan *l);
@@ -68,12 +68,13 @@ int	updateBpdu(bridge *b, packet *m);
 int	sendBpdu(bridge *b);
 int 	waitPacket(bridge *b);
 int	sendPacket(bridge *b, packet *p);
-lan*	findHost(bridge *b, int hostName);
-int 	addHost(bridge *b, int lanNum, int hostName);
 void	printHostlist(bridge *b);
+int	writeToAllOnLans(bridge *b, packet *p);
 int 	writeToAllLans(bridge *b, packet *p);
 int 	bridgeClose(bridge * b);
 
+
+int host_list[0xFFFF];
 
 
 #endif

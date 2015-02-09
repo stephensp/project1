@@ -45,7 +45,6 @@ int main(int argc, char *argv[]) {
 		b->lans[i].name = malloc(sizeof(argv[2+1]));
 		b->lans[i].name = create_lan_name(argv[2+i]);
 		b->lans[i].port = i;
-		printf("Setting lan name %s \n", &(b->lans[i].name[1]));
 	}
 
 	printf("Bridge %04x starting up\n", b->id);
@@ -65,11 +64,11 @@ int main(int argc, char *argv[]) {
 		printf("Error: Close failure\n");
       	}
 
-//	fflush(stdout);
-//
-//	free(b);
-//
-//	fclose(f);
+	fflush(stdout);
+
+	free(b);
+
+	fclose(f);
 
 	return 0;
 }

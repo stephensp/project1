@@ -59,7 +59,7 @@ bpdu* decodeBpdu(packet *m) {
 	return newbpdu;
 }
 
-const char* encodeBpdu(bridge *b) {
+const char* encodeBpdu(bridge *b, int port) {
 	
 	char type[MAXBUF];
 	char val[MAXBUF];
@@ -98,7 +98,7 @@ const char* encodeBpdu(bridge *b) {
 	addPair(message, type, val);
 
 	strcpy(type, "port");
-	sprintf(val, "%x", b->root->port);
+	sprintf(val, "%x", port);
 	addPair(message, type, val);
 
 	strcpy(val ,json_object_get_string(message));
