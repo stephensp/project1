@@ -106,12 +106,13 @@ int bridgeRun(bridge *b) {
 			count++;
 		}
 		memset(buf, 0, MAXBUF);
-		memset(p->message, 0, MAXBUF);
+		memset(p->message, 0, sizeof(p->message));
+		printf("why oh why\n");
+		fflush(stdout);
 		status = waitPacket(b);
 		while(status == -2) {
 			status = waitPacket(b);
 		}
-		memset(buf, 0, MAXBUF);
 		for(i = 0; i < b->num_total_lans; i++) {
 			lanCur = &(b->lans[i]);
 			if(FD_ISSET(lanCur->sockfd, &b->fdsoc) != 0) {
@@ -120,10 +121,13 @@ int bridgeRun(bridge *b) {
 						MAXBUF);
 		//		printf("Read message %s\n", p->buf);
 				if(jsonDecode(p) != 0) {
-					printf("Failing decoding messsage,	message dropped\n");
+					printf("Failing decoding messsage, message dropped\n");
+					fflush(stdout);
 					break;
 				}
 				if(p->type == BPDU) {
+					printf("BPDU found \n");
+					fflush(stdout);
 					if(updateBpdu(b, p) != 0) {
 						printf("Error update BPDU\n");
 					}
@@ -140,7 +144,7 @@ int bridgeRun(bridge *b) {
 					if(sendPacket(b, p) != 0) {
 						printf("Error sending\n");
 					}
-				//	printHostlist(b);
+//				//	printHostlist(b);
 				}
 			}
 		}
@@ -167,7 +171,7 @@ int updateBpdu(bridge *b, packet *p) {
 	}
 	status = add_bpdubuffer(b, newr);
 
-	newRoot(b, newr);
+//	newRoot(b, newr);
 
 	return status;
 
@@ -289,12 +293,11 @@ int writeToAllOnLans(bridge *b, packet *p) {
 		if((b->on_lans[i] == NULL) && (i != b->root->rec_port)) {
 			continue;
 		}
-		printf("b->root->recport = %d\n", b->root->rec_port);
+	//	printf("Writing %s to port %d\n", p->message, i);
 		fflush(stdout);
 	//	if(b->on_lans[i] == NULL ) {
 	//	}
 		bytes_written = write(b->lans[i].sockfd, p->buf, p->bytes_read);
-		fflush(stdout);
 		if(bytes_written != p->bytes_read) {
 			if (bytes_written > 0) {
 				printf( "Error: Partial write"); 
