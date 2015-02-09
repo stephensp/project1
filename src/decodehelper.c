@@ -184,8 +184,7 @@ int setValues(json_object *val, char * key, packet *m) {
 		if(type == json_type_string){
 			strcpy(m->message, json_object_get_string(val));
 		}else if(type == json_type_object) {
-			
-
+			strcpy(m->message, json_object_get_string(val));
 		}else {
 			printf("Error decoding message\n");
 			return -1;

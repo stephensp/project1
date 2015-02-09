@@ -90,12 +90,14 @@ int bridgeRun(bridge *b) {
 	
 
 	p = (packet *)malloc(sizeof(packet));
-	p->buf = buf;
 	status = 0;
-	memset(buf, 0, MAXBUF);
+	memset(p, 0, sizeof(packet));
+	p->buf = buf;
 
 	sendBpdu(b);
 	while(1) {	
+		memset(buf, 0, MAXBUF);
+		memset(p->message, 0, MAXBUF);
 		status = waitPacket(b);
 		while(status == -2) {
 			status = waitPacket(b);
@@ -155,18 +157,9 @@ int updateBpdu(bridge *b, packet *p) {
 		return -1;
 	}
 	status = add_bpdubuffer(b, newr);
-	if(newr->rootid < b->root->rootid) {
-		// We have a new root
-		newRoot(b, newr);
-	}
-	if(newr->rootid == b->root->rootid) {
-		if(newr->cost < b->root->cost) {
-			newRoot(b, newr);
-		}
-		if(newr->port < b->root->port) {
-			newRoot(b, newr);
-		}
-	}
+
+	newRoot(b, newr);
+
 	return status;
 
 }
@@ -264,7 +257,7 @@ int writeToAllOnLans(bridge *b, packet *p) {
 	int	bytes_written;	
 	int	i;
 
-	printf( "Broadcasting message %s to all ports\n", p->message);
+	printf( "Broadcasting message %s to all ports\n", p->buf);
 	for(i = 0; i < b->num_total_lans; i++) {
 		if(i == p->port) {
 			continue;	

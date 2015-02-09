@@ -10,7 +10,7 @@
 #define MAXFD	4681250		// /proc/sys/fs/file-max
 #define	MAXBUF	256
 
-enum type_t {BPDU , DATA};
+enum packet_type {BPDU , DATA};
 
 typedef struct {
 	char 	*name;
@@ -50,14 +50,14 @@ typedef struct {
 } host;
 
 typedef struct {
-	char		*buf;
-	int		byte_written;
-	int		bytes_read;
-	int		src;
-	int		dest;
-	enum type_t 	type;
-	char		message[256];
-	int		port;
+	char			*buf;
+	int			byte_written;
+	int			bytes_read;
+	int			src;
+	int			dest;
+	enum packet_type 	type;
+	char			message[256];
+	int			port;
 } packet;
 
 

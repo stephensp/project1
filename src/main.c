@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
 		b->lans[i].name = malloc(sizeof(argv[2+1]));
 		b->lans[i].name = create_lan_name(argv[2+i]);
 		b->lans[i].port = i;
+		printf("Adding lan %s on port %d\n", &(b->lans[i].name[1]), i);
 	}
 
 	printf("Bridge %04x starting up\n", b->id);

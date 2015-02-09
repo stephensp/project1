@@ -24,12 +24,14 @@ int add_bpdubuffer(bridge *b, bpdu *newr) {
 void turnoffPorts(bridge *b) {
 	int i;
 	
+	printf("root->port = %d\n", b->root->rec_port);
 	for(i = 0; i < b->num_total_lans; i++) {
-		if(b->root->port == i) {
+		if(b->root->rec_port == i) {
 			b->on_lans[i] = &(b->lans[i]);
 			b->bpdu_buf_on[i] = b->bpdu_buf[i];
 		}
 		else if(isDesignatedPort(b, i)){
+			printf("Designated port: %08x/%d\n", b->id, i);
 			b->on_lans[i] = &(b->lans[i]);
 			b->bpdu_buf_on[i] = b->bpdu_buf[i];
 		}else {
@@ -47,6 +49,8 @@ int isDesignatedPort(bridge *b, int port) {
 	// Compare BPDU's
 	if(b->bpdu_buf[port] == NULL) {
 		// No BPDU for this port yet, assume designated
+		printf("Enabling because is NULL\n");
+		fflush(stdout);
 		return 1;
 	}
 	if(b->root->cost < b->bpdu_buf[port]->cost) {
@@ -63,9 +67,32 @@ int isDesignatedPort(bridge *b, int port) {
 }
 void newRoot(bridge *b, bpdu *newr) {
 
-		b->root = newr;
-		printf("Root port %08x/%d\n", newr->rootid, newr->rec_port);
+		printf("newr->rootid = %08x, newr->cost = %d, newr->port = %d\n", newr->rootid,
+				newr->cost, newr->rec_port);
+
 		fflush(stdout);
+		printf("rootid = %08x,cost = %d, port = %d\n", b->root->rootid,
+				b->root->cost, b->root->rec_port);
+		fflush(stdout);
+		if(newr->rootid < b->root->rootid) {
+			// We have a new root
+			b->root = newr;
+			printf("Root port %08x/%d\n", newr->rootid, newr->rec_port);
+		}
+		if(newr->rootid == b->root->rootid) {
+			if(newr->cost < b->root->cost) {
+				b->root = newr;
+				printf("Root port %08x/%d\n", newr->rootid, newr->rec_port);
+			}
+			if(newr->rec_port < b->root->rec_port) {
+				b->root = newr;
+				printf("Root port %08x/%d\n", newr->rootid, newr->rec_port);
+			}
+		}
+		fflush(stdout);
+		printf("newr->port = %d\n", newr->rec_port);
+		fflush(stdout);
+		b->bpdu_buf[newr->rec_port] = newr;
 		turnoffPorts(b);
 }
 
