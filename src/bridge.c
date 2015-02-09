@@ -36,6 +36,7 @@ int bridgeInit(bridge *b) {
 	b->root->rootid = b->id;
 	b->root->cost = 0;
 	b->root->port = -1; // No port for now
+	b->root->rec_port = -1;
 	create_bpdubuffer(b);
 	
 
@@ -91,6 +92,7 @@ int bridgeRun(bridge *b) {
 	lan	*lanCur;
 	int	status;
 	int	i;
+	int 	count = 0;
 
 	p = (packet *)malloc(sizeof(packet));
 	status = 0;
@@ -99,6 +101,10 @@ int bridgeRun(bridge *b) {
 
 	sendBpdu(b);
 	while(1) {	
+		if(count < 2) {
+			sendBpdu(b);
+			count++;
+		}
 		memset(buf, 0, MAXBUF);
 		memset(p->message, 0, MAXBUF);
 		status = waitPacket(b);
@@ -280,10 +286,14 @@ int writeToAllOnLans(bridge *b, packet *p) {
 		if(i == p->port) {
 			continue;	
 		}
-		if(b->on_lans[i] == NULL) {
+		if((b->on_lans[i] == NULL) && (i != b->root->rec_port)) {
 			continue;
 		}
-		bytes_written = write(b->on_lans[i]->sockfd, p->buf, p->bytes_read);
+		printf("b->root->recport = %d\n", b->root->rec_port);
+		fflush(stdout);
+	//	if(b->on_lans[i] == NULL ) {
+	//	}
+		bytes_written = write(b->lans[i].sockfd, p->buf, p->bytes_read);
 		fflush(stdout);
 		if(bytes_written != p->bytes_read) {
 			if (bytes_written > 0) {
