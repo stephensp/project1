@@ -22,6 +22,7 @@ typedef struct {
 
 typedef struct {
 	int		rootid;
+	int		bridgeid;
 	int		cost;
 	int		port;
 	int		rec_port; // Port the BPDU came in on 
@@ -68,6 +69,7 @@ int	updateBpdu(bridge *b, packet *m);
 int	sendBpdu(bridge *b);
 int 	waitPacket(bridge *b);
 int	sendPacket(bridge *b, packet *p);
+void 	printSpanningTree(bridge *b);
 void	printHostlist(bridge *b);
 int	writeToAllOnLans(bridge *b, packet *p);
 int 	writeToAllLans(bridge *b, packet *p);

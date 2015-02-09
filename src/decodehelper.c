@@ -44,17 +44,27 @@ bpdu* decodeBpdu(packet *m) {
 				return NULL;
 			}
 		}
-		if(strcmp(key, "cost") == 0) {
+		if(strcmp(key, "id") == 0) {
 			if(type == json_type_string) {
 				sscanf(json_object_get_string(val), "%x", 
-						&(newbpdu->cost));
+						&(newbpdu->bridgeid));
 			}else {
-				printf("Error: bpdu cost bad json type\n");
+				printf("Error: bpdu id bad json type\n");
+				return NULL;
+			}
+		}
+		if(strcmp(key, "port") == 0) {
+			if(type == json_type_string) {
+				sscanf(json_object_get_string(val), "%x", 
+						&(newbpdu->port));
+			}else {
+				printf("Error: bpdu id bad json type\n");
 				return NULL;
 			}
 		}
 				
 	}
+	
 	newbpdu->rec_port = m->port;
 	return newbpdu;
 }

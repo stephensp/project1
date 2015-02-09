@@ -38,10 +38,14 @@ int bridgeInit(bridge *b) {
 	b->root->port = -1; // No port for now
 	create_bpdubuffer(b);
 	
+
 	printf("New root: %08x/%08x\n", b->id, b->root->rootid);
-	// Init on_lans array 
+
+	// Init on_lans array , and turn them all on for now
 	b->on_lans = (lan **)malloc(sizeof(lan *) * b->num_total_lans);
-	memset(b->on_lans, 0, sizeof(lan *) * b->num_total_lans);
+	for(i = 0; i < b->num_total_lans; i++) {
+		b->on_lans[i] = &(b->lans[i]);
+	}
 
 	// Init host_list
 	memset(host_list, -1, 0xffff * sizeof(int));
@@ -87,7 +91,6 @@ int bridgeRun(bridge *b) {
 	lan	*lanCur;
 	int	status;
 	int	i;
-	
 
 	p = (packet *)malloc(sizeof(packet));
 	status = 0;
@@ -109,14 +112,7 @@ int bridgeRun(bridge *b) {
 				p->port = lanCur->port;
 				p->bytes_read = read(lanCur->sockfd, buf, 
 						MAXBUF);
-//				printf( "%d bytes read from lan %s\n", 
-//						p->bytes_read,
-//						&(lanCur->name[1]));
-				
-//				printf( "Message port is: %d\n", p->port);
-//				fflush(stdout);
-//
-//				// Let's just write to all LANS for now
+		//		printf("Read message %s\n", p->buf);
 				if(jsonDecode(p) != 0) {
 					printf("Failing decoding messsage,	message dropped\n");
 					break;
@@ -128,6 +124,10 @@ int bridgeRun(bridge *b) {
 
 				}
 				if(p->type == DATA) {
+					// Check if we shoould be listneing on
+					// this port
+					if(b->on_lans[i] == 0) { continue; } 
+
 					printf("Received %s on port %d from source %08x to dest %08x\n",
 							p->message, p->port, 
 							p->src, p->dest);
@@ -150,6 +150,9 @@ int updateBpdu(bridge *b, packet *p) {
 
 	newr = decodeBpdu(p);
 
+	printf("BPDU read on port %d is %s\n", p->port, p->buf);
+	printf("rootid = %08x, bridgeid = %08x, cost = %d, rec_port = %d, port = %d\n", 
+			newr->rootid, newr->bridgeid, newr->cost, newr->rec_port, newr->port);
 	fflush(stdout);
 	
 	if(newr == NULL) {
@@ -235,10 +238,25 @@ int sendPacket(bridge *b, packet *p) {
 
 	// Overwrite whatever was there, just to make sure it is uptodate
 	host_list[p->src] = p->port;
+	
+//	printSpanningTree(b);
 
 //	printHostlist(b);
 
 	return 0;
+
+}
+void printSpanningTree(bridge *b) {
+	int i;
+	printf("\n\n\n************Printing Spanning Tree for Bridge %08x****************\n", b->id);
+	for(i = 0; i < b->num_total_lans; i++){
+		if(b->on_lans[i] != 0) {
+			printf("port %i is on\n", i );
+		}else {
+			printf("port %i is off\n", i);
+		}
+	}
+	fflush(stdout);
 
 }
 void printHostlist(bridge *b) {
@@ -262,10 +280,10 @@ int writeToAllOnLans(bridge *b, packet *p) {
 		if(i == p->port) {
 			continue;	
 		}
-		if(b->on_lans == NULL) {
+		if(b->on_lans[i] == NULL) {
 			continue;
 		}
-		bytes_written = write(b->lans[i].sockfd, p->buf, p->bytes_read);
+		bytes_written = write(b->on_lans[i]->sockfd, p->buf, p->bytes_read);
 		fflush(stdout);
 		if(bytes_written != p->bytes_read) {
 			if (bytes_written > 0) {
