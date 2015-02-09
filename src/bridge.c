@@ -86,16 +86,14 @@ int bridgeRun(bridge *b) {
 
 	sendBpdu(b);
 
-	while(status == 0) {	
+	while(1) {	
 		status = waitPacket(b);
-		if(status == -2) {
+		while(status == -2) {
 			// Try one more time
 			status = waitPacket(b);
-			if(status == -2) {
-				break;
-			}
+//			if(status == -2) {
+//			}
 		}
-		printf("number of lans %d\n", b->numLans);
 		for(i = 0; i < b->numLans; i++) {
 			lanCur = &(b->lans[i]);
 			if(FD_ISSET(lanCur->sockfd, &b->fdsoc) != 0){
@@ -106,31 +104,28 @@ int bridgeRun(bridge *b) {
 						p->bytes_read,
 						&(lanCur->name[1]));
 				printf( "Message read: %s\n", buf);
+				printf( "Message port is: %d\n", p->port);
 				fflush(stdout);
-				// Let's just write to all LANS for now
-//				if(jsonDecode(p) != 0) {
-//					printf("Failing decoding messsage,	message dropped\n");
-//					break;
-//				}
-//				if(p->type == BPDU) {
-//					if(updateBpdu(b, p) != 0) {
-//						printf("Error update BPDU\n");
-//					}
-//
-//				}
-//				if(p->type == DATA) {
-//					if(sendPacket(b, p) != 0) {
-//						printf("Error sending\n");
-//					}
+//				// Let's just write to all LANS for now
+				if(jsonDecode(p) != 0) {
+					printf("Failing decoding messsage,message dropped\n");
+					break;
+				}
+				if(p->type == BPDU) {
+					if(updateBpdu(b, p) != 0) {
+					}
+
+				}
+				if(p->type == DATA) {
+					printf("preparing to send packet\n");
+					if(sendPacket(b, p) != 0) {
+						printf("Error sending\n");
+					}
 //					printHostlist(b);
-//				}
-					
-				
+				}
 
 			}
 		}
-	printf("status is %d\n", status);
-	fflush(stdout);
 	}
 	free(p);
 	fflush(stdout);
@@ -175,8 +170,8 @@ int waitPacket(bridge *b) {
 	int	i, rs; 
 
 	// Set time limit
-	timeout.tv_sec = 3;
-	timeout.tv_usec = 0;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 500000;
 	
 
 	FD_ZERO(&b->fdsoc); 
@@ -189,8 +184,6 @@ int waitPacket(bridge *b) {
 	rs = select(sizeof(b->fdsoc)*MAXFD, &b->fdsoc, NULL, NULL, 
 			&timeout);
 
-	printf( "rs is %d\n", rs);
-	fflush(stdout);
 	if(rs == -1) {
 		printf( "Error: Select error\n");
 		perror("Select error");
@@ -198,8 +191,6 @@ int waitPacket(bridge *b) {
 		return -1;
 	}
 	if(rs == 0) {
-		printf( "Select timed out\n");
-		fflush(stdout);
 		return -2;
 	}
 
@@ -208,31 +199,32 @@ int waitPacket(bridge *b) {
 }
 
 int sendPacket(bridge *b, packet *p) {
-	lan 	*dest;
-	int	bytes_written;
-
-	dest = findHost(p->dest);
-	if(dest == NULL) {
-		// We don't know where host is, send on all LANS
-		printf("Writing to all LANS\n");
-		if(writeToAllLans(b, p) != 0) {
-			printf("Error: from writing to all LANS\n");
-
-		}
-
-	}else{
-		
-		bytes_written = write(dest->sockfd, p->buf, p->bytes_read);
-		printf("bytes_read = %d, bytes_written = %d\n", p->bytes_read, bytes_written);
-		fflush(stdout);
-		printf( "Writing %s to %s \n", p->buf, &(dest->name[1]));
-		fflush(stdout);
-	}
-		
-
-	if(findHost(p->src) == NULL) {
-		addHost(b, p->port, p->src); 
-	}
+	writeToAllLans(b, p);
+//	lan 	*dest;
+//	int	bytes_written;
+//
+//	dest = findHost(p->dest);
+//	if(dest == NULL) {
+//		// We don't know where host is, send on all LANS
+//		printf("Writing to all LANS\n");
+//		if(writeToAllLans(b, p) != 0) {
+//			printf("Error: from writing to all LANS\n");
+//
+//		}
+//
+//	}else{
+//		
+//		bytes_written = write(dest->sockfd, p->buf, p->bytes_read);
+//		printf("bytes_read = %d, bytes_written = %d\n", p->bytes_read, bytes_written);
+//		fflush(stdout);
+//		printf( "Writing %s to %s \n", p->buf, &(dest->name[1]));
+//		fflush(stdout);
+//	}
+//		
+//
+//	if(findHost(p->src) == NULL) {
+//		addHost(b, p->port, p->src); 
+//	}
 	return 0;
 
 }
@@ -288,7 +280,9 @@ int writeToAllLans(bridge *b, packet *p) {
 	bytes_read = p->bytes_read;
 	
 	for(i = 0; i < b->numLans; i++) {
-		
+		if(i == p->port) {
+			continue;	
+		}
 		bytes_written = write(b->lans[i].sockfd, p->buf, bytes_read);
 		printf("bytes_read = %d, bytes_written = %d\n", bytes_read, bytes_written);
 		fflush(stdout);
