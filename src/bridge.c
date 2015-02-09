@@ -108,22 +108,22 @@ int bridgeRun(bridge *b) {
 				printf( "Message read: %s\n", buf);
 				fflush(stdout);
 				// Let's just write to all LANS for now
-//				if(jsonDecode(p) != 0) {
-//					printf("Failing decoding messsage,	message dropped\n");
-//					break;
-//				}
-//				if(p->type == BPDU) {
-//					if(updateBpdu(b, p) != 0) {
-//						printf("Error update BPDU\n");
-//					}
-//
-//				}
-//				if(p->type == DATA) {
-//					if(sendPacket(b, p) != 0) {
-//						printf("Error sending\n");
-//					}
-//					printHostlist(b);
-//				}
+				if(jsonDecode(p) != 0) {
+					printf("Failing decoding messsage,	message dropped\n");
+					break;
+				}
+				if(p->type == BPDU) {
+					if(updateBpdu(b, p) != 0) {
+						printf("Error update BPDU\n");
+					}
+
+				}
+				if(p->type == DATA) {
+					if(sendPacket(b, p) != 0) {
+						printf("Error sending\n");
+					}
+					printHostlist(b);
+				}
 					
 				
 
@@ -211,7 +211,7 @@ int sendPacket(bridge *b, packet *p) {
 	lan 	*dest;
 	int	bytes_written;
 
-	dest = findHost(p->dest);
+	dest = findHost(b, p->dest);
 	if(dest == NULL) {
 		// We don't know where host is, send on all LANS
 		printf("Writing to all LANS\n");
@@ -230,21 +230,19 @@ int sendPacket(bridge *b, packet *p) {
 	}
 		
 
-	if(findHost(p->src) == NULL) {
+	if(findHost(b, p->src) == NULL) {
 		addHost(b, p->port, p->src); 
 	}
 	return 0;
 
 }
-lan* findHost(int hostName) {
+lan* findHost(bridge *b, int hostName) {
 	int	length, i;
 
-	length = sizeof(host_list)/sizeof(host);
-	printf( "sizeof host_list is %d\n", length);
-	fflush(stdout);
+	length = b->numHosts;
 
-	
 	for(i = 0; i < length; i++) {
+		printf("checking %d against %d\n", host_list[i].name, hostName);
 		if(host_list[i].name == hostName) {
 			return &(host_list[i].lanOn);
 		}

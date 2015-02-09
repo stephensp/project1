@@ -64,7 +64,7 @@ int	updateBpdu(bridge *b, packet *m);
 int	sendBpdu(bridge *b);
 int 	waitPacket(bridge *b);
 int	sendPacket(bridge *b, packet *p);
-lan*	findHost(int hostName);
+lan*	findHost(bridge *b, int hostName);
 int 	addHost(bridge *b, int lanNum, int hostName);
 void	printHostlist(bridge *b);
 int 	writeToAllLans(bridge *b, packet *p);

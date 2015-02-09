@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 		b->lans[i].name = malloc(sizeof(argv[2+1]));
 		b->lans[i].name = create_lan_name(argv[2+i]);
 		b->lans[i].port = i;
-		printf("Setting lan name 0%s \n", b->lans[i].name);
+		printf("Setting lan name 0%s \n", &(b->lans[i].name[1]));
 	}
 
 	printf("Bridge %04x starting up\n", b->id);
