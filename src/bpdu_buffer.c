@@ -27,14 +27,14 @@ void turnoffPorts(bridge *b) {
 	for(i = 0; i < b->num_total_lans; i++) {
 		printf("Checking port %d\n", i);
 		if((b->root->rec_port == i) && (b->root->rootid != b->id)) {
-		//	b->on_lans[i] = &(b->lans[i]);
-		//	b->bpdu_buf_on[i] = b->bpdu_buf[i];
-			b->on_lans[i] = 0;
-			b->bpdu_buf_on[i] = 0;
-			printf("Disabled port: %08x/%d\n", b->id, i);
-			fflush(stdout);
+			b->on_lans[i] = &(b->lans[i]);
+			b->bpdu_buf_on[i] = b->bpdu_buf[i];
+//			b->on_lans[i] = 0;
+//			b->bpdu_buf_on[i] = 0;
+//			printf("Disabled port: %08x/%d\n", b->id, i);
+//			fflush(stdout);
 		}
-		if(isDesignatedPort(b, i)){
+		else if(isDesignatedPort(b, i)){
 			printf("Designated port: %08x/%d\n", b->id, i);
 			fflush(stdout);
 			b->on_lans[i] = &(b->lans[i]);
