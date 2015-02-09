@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-use lib '/home/amislove/perl5/lib/perl5';
 use strict;
 use warnings;
 use threads;

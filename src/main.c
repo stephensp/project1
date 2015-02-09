@@ -33,15 +33,15 @@ int main(int argc, char *argv[]) {
 	// Set some variables
 	sscanf(argv[1], "%x", &(b->id));	
 
-	b->numLans = 0;
+	b->num_total_lans = 0;
 	for(i = 2; i < argc; i++) {
-		b->numLans++;
+		b->num_total_lans++;
 	}
 
-	b->lans = (lan *)malloc(b->numLans * sizeof(lan));
+	b->lans = (lan *)malloc(b->num_total_lans * sizeof(lan));
 
 	// Add each lan to bridge structure and give each one a port num
-	for(i = 0; i < b->numLans; i++) {
+	for(i = 0; i < b->num_total_lans; i++) {
 		b->lans[i].name = malloc(sizeof(argv[2+1]));
 		b->lans[i].name = create_lan_name(argv[2+i]);
 		b->lans[i].port = i;

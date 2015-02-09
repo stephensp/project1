@@ -22,7 +22,9 @@ bpdu* decodeBpdu(packet *m) {
 
 	newbpdu = (bpdu *)malloc(sizeof(bpdu));
 
-	json_object_object_foreach(m->message, key, val) {
+	json_object *jobj = json_tokener_parse(m->message);
+
+	json_object_object_foreach(jobj, key, val) {
 		type = json_object_get_type(val);
 		if(strcmp(key, "root") == 0) {
 			if(type == json_type_string) {
@@ -53,6 +55,7 @@ bpdu* decodeBpdu(packet *m) {
 		}
 				
 	}
+	newbpdu->rec_port = m->port;
 	return newbpdu;
 }
 
@@ -136,7 +139,7 @@ int getValues(json_object *jobj, packet *m) {
 
 int setValues(json_object *val, char * key, packet *m) {
 
-	enum json_type type;
+	enum	json_type type;
 	type = json_object_get_type(val);
 
 	if(strcmp(key, "source") == 0) {
@@ -178,16 +181,18 @@ int setValues(json_object *val, char * key, packet *m) {
 	}
 	
 	if(strcmp(key, "message") == 0) {
-		if(type == json_type_object) {
-			m->message = val;
-			return 0;
+		if(type == json_type_string){
+			strcpy(m->message, json_object_get_string(val));
+		}else if(type == json_type_object) {
+			
+
 		}else {
-			printf("Error: message val is of wrong json type\n");
+			printf("Error decoding message\n");
 			return -1;
 		}
 	}
-		
 	return 0;
+		
 }
 
 

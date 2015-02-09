@@ -4,6 +4,7 @@
 
 #include <netdb.h>
 #include <json.h>
+#include <sys/time.h>
 
 
 #define MAXFD	4681250		// /proc/sys/fs/file-max
@@ -20,19 +21,22 @@ typedef struct {
 } lan;
 
 typedef struct {
-	int	rootid;
-	int	cost;
-	int	port;
-
+	int		rootid;
+	int		cost;
+	int		port;
+	int		rec_port; // Port the BPDU came in on 
+	struct timeval	time_added; 
 } bpdu;
 
 typedef struct {
 	lan	*lans;
 	int 	id;
-	int	numLans;
+	int	num_total_lans;
 	int	numHosts;
 	fd_set	fdsoc;
 	bpdu	*root;
+	bpdu	**bpdu_buf;
+	bpdu	**bpdu_buf_on;
 
 } bridge;
 
@@ -51,7 +55,7 @@ typedef struct {
 	int		src;
 	int		dest;
 	enum type_t 	type;
-	json_object	*message;
+	char		message[256];
 	int		port;
 } packet;
 
@@ -64,7 +68,7 @@ int	updateBpdu(bridge *b, packet *m);
 int	sendBpdu(bridge *b);
 int 	waitPacket(bridge *b);
 int	sendPacket(bridge *b, packet *p);
-lan*	findHost(int hostName);
+lan*	findHost(bridge *b, int hostName);
 int 	addHost(bridge *b, int lanNum, int hostName);
 void	printHostlist(bridge *b);
 int 	writeToAllLans(bridge *b, packet *p);

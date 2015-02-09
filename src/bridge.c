@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "bridge.h"
+#include "bpdu_buffer.h"
 #include "strhelper.h"
 #include "decodehelper.h"
 
@@ -14,7 +15,7 @@ int bridgeInit(bridge *b) {
 	// First let's set up the socket
 	int status, i;
 
-	for(i = 0; i < b->numLans; i++) {
+	for(i = 0; i < b->num_total_lans; i++) {
 		status = socketInit(&(b->lans[i]));
 		if(status == -1) {
 			return status;
@@ -26,7 +27,7 @@ int bridgeInit(bridge *b) {
 	FD_ZERO(&b->fdsoc); 
 
 	// Add each LAN socket 
-	for(i = 0; i < b->numLans; i++ ) {
+	for(i = 0; i < b->num_total_lans; i++ ) {
 		FD_SET(b->lans[1].sockfd, &(b->fdsoc));
 	}
 
@@ -35,6 +36,7 @@ int bridgeInit(bridge *b) {
 	b->root->rootid = b->id;
 	b->root->cost = 0;
 	b->root->port = -1; // No port for now
+	create_bpdubuffer(b);
 	return 0;
 }
 
@@ -85,7 +87,6 @@ int bridgeRun(bridge *b) {
 	memset(buf, 0, MAXBUF);
 
 	sendBpdu(b);
-
 	while(1) {	
 		status = waitPacket(b);
 		while(status == -2) {
@@ -94,10 +95,11 @@ int bridgeRun(bridge *b) {
 //			if(status == -2) {
 //			}
 		}
-		for(i = 0; i < b->numLans; i++) {
+		memset(buf, 0, MAXBUF);
+		for(i = 0; i < b->num_total_lans; i++) {
 			lanCur = &(b->lans[i]);
 			if(FD_ISSET(lanCur->sockfd, &b->fdsoc) != 0){
-				p->port = i;
+				p->port = lanCur->port;
 				p->bytes_read = read(lanCur->sockfd, buf, 
 						MAXBUF);
 				printf( "%d bytes read from lan %s\n", 
@@ -106,24 +108,26 @@ int bridgeRun(bridge *b) {
 				printf( "Message read: %s\n", buf);
 				printf( "Message port is: %d\n", p->port);
 				fflush(stdout);
-//				// Let's just write to all LANS for now
+
+				// Let's just write to all LANS for now
 				if(jsonDecode(p) != 0) {
-					printf("Failing decoding messsage,message dropped\n");
+					printf("Failing decoding messsage,	message dropped\n");
 					break;
 				}
 				if(p->type == BPDU) {
+					printf("found a BPDU\n");
 					if(updateBpdu(b, p) != 0) {
+						printf("Error update BPDU\n");
 					}
 
 				}
 				if(p->type == DATA) {
-					printf("preparing to send packet\n");
+					printf("found a data packet\n");
 					if(sendPacket(b, p) != 0) {
 						printf("Error sending\n");
 					}
-//					printHostlist(b);
+				//	printHostlist(b);
 				}
-
 			}
 		}
 	}
@@ -133,34 +137,47 @@ int bridgeRun(bridge *b) {
 }
 int updateBpdu(bridge *b, packet *p) {
 
-	bpdu* newr;
-	newr = decodeBpdu(p);
+	bpdu* 	newr;
+	int	status = 0;
 
+	newr = decodeBpdu(p);
+//	length = sizeof(b->bpdu_buf)/sizeof(bpdu*);
+	printf("rootid %08x, cost %d, port %d\n", newr->rootid, newr->cost,
+			newr->port);
+
+	fflush(stdout);
+	
 	if(newr == NULL) {
 		printf("Error decoding BPDU\n");
 		return -1;
 	}
-	if(newr->rootid > b->root->rootid) {
-		// Nothing to be done
-		return 0;
-	}
+	status = add_bpdubuffer(b, newr);
 	if(newr->rootid < b->root->rootid) {
 		// We have a new root
-
-		free(b->root);
-		b->root = newr;
+		newRoot(b, newr);
 	}
+	if(newr->rootid == b->root->rootid) {
+		if(newr->cost < b->root->cost) {
+			newRoot(b, newr);
+		}
+		if(newr->port < b->root->port) {
+			newRoot(b, newr);
+		}
+	}
+	return status;
 
-
-	return 0;
 }
 
 int sendBpdu(bridge *b) {
 	const char* buf;
+	int i;
 
 	buf = encodeBpdu(b);
 
-	printf("Sending BPDU = %s\n", buf);
+	for(i = 0; i < b->num_total_lans; i++) {
+		write(b->lans[i].sockfd, buf, MAXBUF);
+	}
+	
 	return 0;
 
 }
@@ -177,7 +194,7 @@ int waitPacket(bridge *b) {
 	FD_ZERO(&b->fdsoc); 
 
 	// Add each LAN socket 
-	for(i = 0; i < b->numLans; i++ ) {
+	for(i = 0; i < b->num_total_lans; i++ ) {
 		FD_SET(b->lans[i].sockfd, &(b->fdsoc));
 	}
 
@@ -228,15 +245,13 @@ int sendPacket(bridge *b, packet *p) {
 	return 0;
 
 }
-lan* findHost(int hostName) {
+lan* findHost(bridge *b, int hostName) {
 	int	length, i;
 
-	length = sizeof(host_list)/sizeof(host);
-	printf( "sizeof host_list is %d\n", length);
-	fflush(stdout);
+	length = b->numHosts;
 
-	
 	for(i = 0; i < length; i++) {
+		printf("checking %d against %d\n", host_list[i].name, hostName);
 		if(host_list[i].name == hostName) {
 			return &(host_list[i].lanOn);
 		}
@@ -279,7 +294,7 @@ int writeToAllLans(bridge *b, packet *p) {
 
 	bytes_read = p->bytes_read;
 	
-	for(i = 0; i < b->numLans; i++) {
+	for(i = 0; i < b->num_total_lans; i++) {
 		if(i == p->port) {
 			continue;	
 		}
@@ -308,7 +323,7 @@ int bridgeClose(bridge * b) {
 	
 	printf("Closing sockets\n");
 	fflush(stdout);
-	for(i = 0; i < b->numLans; i++) {
+	for(i = 0; i < b->num_total_lans; i++) {
 		close(b->lans[i].sockfd);
 	}
 
